@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daga Group Forecaster</title>
+<style>
+:root{
+  --bg:#FFFCF9;--card:#FFFFFF;--ink:#3A0D0B;--muted:#8A4A46;--line:#F2D3D0;
+  --red:#D42B24;--red2:#A81E19;--sec:#D42B24;--ren:#E8907F;--pipe:#C9962A;--ok:#2E7D4F;--warn:#B7791F;
+  --warnbg:#FFF6E0;--inbg:#FFF8F7;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1A0F0E;--card:#24161454;--ink:#F6E7E5;--muted:#C9A19C;--line:#4A2A27;
+  --red:#F0544C;--red2:#FF7A72;--sec:#F0544C;--ren:#C97A6D;--pipe:#D9AE4E;--ok:#5FBF86;--warn:#E8B44E;
+  --warnbg:#3A2A10;--inbg:#2A1917;}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{background:var(--red);color:#fff;padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+header h1{font-size:18px;font-weight:700}
+header small{opacity:.85;font-size:12px;display:block}
+.hbtns{display:flex;gap:8px;flex-wrap:wrap}
+button,.btn{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+header button{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.35)}
+button.primary{background:var(--red);color:#fff;border-color:var(--red)}
+button:hover{filter:brightness(.95)}
+main{max-width:1400px;margin:0 auto;padding:16px}
+.controls{display:flex;flex-wrap:wrap;gap:14px;align-items:end;margin-bottom:14px}
+.controls label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+select,input{font:inherit;font-size:13px;color:var(--ink);background:var(--inbg);border:1px solid var(--line);border-radius:5px;padding:5px 7px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:8px;padding:10px 12px}
+.kpi .l{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.kpi .v{font-size:22px;font-weight:700}
+.kpi .s{font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:14px;overflow-x:auto}
+.tab{background:none;border:none;border-bottom:3px solid transparent;border-radius:0;padding:9px 16px;font-weight:600;color:var(--muted);margin-bottom:-2px;white-space:nowrap}
+.tab.on{color:var(--red);border-bottom-color:var(--red)}
+.pane{display:none}.pane.on{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:14px}
+.card h3{font-size:14px;margin-bottom:8px}
+.card p.note{font-size:12px;color:var(--muted);margin-bottom:8px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{background:var(--red);color:#fff;text-align:left;padding:6px 7px;font-weight:600;white-space:nowrap;position:sticky;top:0}
+td{padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.tot td{font-weight:700;border-top:2px solid var(--ink)}
+tr.exp td{opacity:.5}
+td input{width:100%;min-width:60px;padding:3px 5px}
+td input.w-s{min-width:52px;max-width:70px}
+td input.w-m{min-width:96px}
+td input.w-l{min-width:170px}
+td input[type=checkbox]{width:auto;min-width:0}
+.unv{background:var(--warnbg)!important}
+.warn{background:var(--warnbg);border:1px solid var(--warn);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px}
+.warn ul{margin-left:18px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:6px}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+svg text{fill:var(--ink);font-size:11px}
+svg .ax{stroke:var(--line)}
+.del{color:var(--red);border:none;background:none;font-size:16px;padding:0 4px}
+.setgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.setgrid label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+.tag{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:10px;border:1px solid var(--line);color:var(--muted)}
+footer{font-size:11.5px;color:var(--muted);text-align:center;padding:20px}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Daga Group — Contract Revenue Forecaster</h1><small>B2G public transport · bus GCC, cab & manpower contracts · Indian FY (Apr–Mar) · works offline</small></div>
+  <div class="hbtns">
+    <button id="bExport">Export JSON</button>
+    <button id="bImport">Import JSON</button>
+    <button id="bCsv">Forecast CSV</button>
+    <button id="bReset">Reset to profile data</button>
+    <input type="file" id="fImport" accept=".json" hidden>
+  </div>
+</header>
+<main>
+  <div class="controls">
+    <label>Scenario<select id="scen"><option value="conservative">Conservative</option><option value="base">Base</option><option value="aggressive">Aggressive</option></select></label>
+    <label>First FY<select id="fy0"></select></label>
+    <label>Horizon (years)<select id="hz"><option>3</option><option>5</option><option>7</option><option>10</option></select></label>
+    <label>Rates as of<input type="month" id="asof"></label>
+  </div>
+  <div id="warnBox"></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="tabs">
+    <button class="tab on" data-t="fc">Forecast</button>
+    <button class="tab" data-t="ct">Contracts</button>
+    <button class="tab" data-t="pp">Tender pipeline</button>
+    <button class="tab" data-t="as">Assumptions</button>
+  </div>
+
+  <section class="pane on" id="p-fc">
+    <div class="card">
+      <h3>Revenue by FY (₹ Cr)</h3>
+      <div class="legend"><span><i style="background:var(--sec)"></i>Secured (contract in force)</span><span><i style="background:var(--ren)"></i>Renewal / extension (probability-weighted)</span><span><i style="background:var(--pipe)"></i>New tenders (probability-weighted)</span></div>
+      <div id="chRev"></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h3>Expiry cliff — annual run-rate expiring by FY (₹ Cr)</h3><p class="note">What you lose each year if nothing renews. This is the number to manage.</p><div id="chCliff"></div></div>
+      <div class="card"><h3>Bus fleet at FY end</h3><p class="note">Secured buses vs probability-weighted fleet (renewals + tenders).</p><div id="chFleet"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h3 id="concT">Client concentration</h3><div id="chConc"></div></div>
+      <div class="card"><h3>Segment economics (₹ Cr)</h3><div class="tw" id="tSeg"></div></div>
+    </div>
+    <div class="card"><h3>Revenue by contract (₹ Cr, weighted)</h3><div class="tw" id="tByC"></div></div>
+  </section>
+
+  <section class="pane" id="p-ct">
+    <div class="card">
+      <h3>Contracts in hand</h3>
+      <p class="note">Bus rate = ₹/km; Cab & Manpower rate = ₹ per vehicle/person per month (billing rate incl. statutory). Yellow rows = rate not yet verified against the actual LoA/agreement. Renewal % = probability of extension after end date; renewal term = years it runs if extended.</p>
+      <div class="tw" id="tCt"></div>
+      <div style="margin-top:8px;display:flex;gap:8px"><button class="primary" data-add="Bus">+ Bus contract</button><button data-add="Cab">+ Cab contract</button><button data-add="Manpower">+ Manpower contract</button></div>
+    </div>
+  </section>
+
+  <section class="pane" id="p-pp">
+    <div class="card">
+      <h3>Tender pipeline</h3>
+      <p class="note">Revenue starts at expected award + mobilisation months, weighted by win probability × scenario factor. Be honest with probabilities — an EOI is not a tender.</p>
+      <div class="tw" id="tPp"></div>
+      <div style="margin-top:8px"><button class="primary" id="addP">+ Tender</button></div>
+    </div>
+  </section>
+
+  <section class="pane" id="p-as">
+    <div class="card">
+      <h3>Global assumptions</h3>
+      <div class="setgrid" id="sets"></div>
+    </div>
+    <div class="card">
+      <h3>Scenario factors</h3>
+      <p class="note">Multiply renewal and win probabilities (capped at 100%); uptime shift applies to bus contracts in percentage points.</p>
+      <div class="tw" id="tSc"></div>
+    </div>
+    <div class="card">
+      <h3>Method</h3>
+      <p class="note">Bus monthly revenue = buses × km/bus/day × days in month × uptime × ₹/km × escalation × (1 − penalty %). Cab/Manpower = units × monthly rate × escalation. Escalation compounds monthly from the "rates as of" month (proxy for price-variation clauses: fuel, minimum wages). EBITDA = revenue × segment margin. Working capital = revenue ÷ 365 × receivable days — in B2G this is usually what breaks cash flow, not margin.</p>
+    </div>
+  </section>
+</main>
+<footer>Single-file offline tool. Data saves in this browser; use Export JSON to back up or move it.</footer>
+
+<script>
+(function(){
+const KEY='dagaForecast.v1';
+const SEED={
+ settings:{fy0:2027,hz:5,scen:'base',asof:'2026-10',penalty:2,
+   margin:{Bus:12,Cab:15,Manpower:7},dso:{Bus:60,Cab:90,Manpower:120}},
+ scen:{conservative:{r:0.7,p:0.5,u:-2},base:{r:1,p:1,u:0},aggressive:{r:1.15,p:1.3,u:1}},
+ contracts:[
+  // ---- Bus (₹/km) ----
+  {seg:'Bus',client:'BEST Mumbai',co:'SMT ATPL Assoc.',desc:'500 MIDI AC CNG (TATA)',units:500,start:'2020-06',end:'2030-05',rate:99,kmDay:180,uptime:95,esc:4,renewP:60,renewYrs:5,ver:true},
+  {seg:'Bus',client:'BEST Mumbai',co:'SMT ATPL Assoc.',desc:'125 MIDI AC CNG (TATA)',units:125,start:'2023-04',end:'2033-03',rate:99,kmDay:180,uptime:95,esc:4,renewP:60,renewYrs:5,ver:true},
+  {seg:'Bus',client:'AMTS Ahmedabad',co:'ATPL',desc:'150 Regular AC EV (TATA)',units:150,start:'2026-04',end:'2036-03',rate:62,kmDay:200,uptime:93,esc:2,renewP:50,renewYrs:3,ver:false},
+  {seg:'Bus',client:'AMTS Ahmedabad',co:'SMT',desc:'75 MIDI AC CNG',units:75,start:'2025-04',end:'2032-03',rate:60,kmDay:200,uptime:95,esc:4,renewP:50,renewYrs:3,ver:false},
+  {seg:'Bus',client:'Rajkot Rajpath Ltd',co:'SMT',desc:'100 MIDI CNG (Eicher)',units:100,start:'2023-04',end:'2030-03',rate:50,kmDay:190,uptime:95,esc:4,renewP:50,renewYrs:3,ver:false},
+  {seg:'Bus',client:'AMTS Ahmedabad',co:'ATPL',desc:'47 MIDI CNG',units:47,start:'2023-04',end:'2030-03',rate:52,kmDay:200,uptime:95,esc:4,renewP:50,renewYrs:3,ver:false},
+  {seg:'Bus',client:'AMTS Ahmedabad',co:'ATPL',desc:'65 MIDI CNG',units:65,start:'2022-04',end:'2029-03',rate:52,kmDay:200,uptime:95,esc:4,renewP:50,renewYrs:3,ver:false},
+  {seg:'Bus',client:'AMTS Ahmedabad',co:'SMT',desc:'100 MIDI CNG',units:100,start:'2020-04',end:'2027-03',rate:52,kmDay:200,uptime:95,esc:4,renewP:50,renewYrs:3,ver:false},
+  {seg:'Bus',client:'AMTS Ahmedabad',co:'ATPL / SMT',desc:'44 MIDI CNG (2017–26)',units:44,start:'2017-04',end:'2026-12',rate:50,kmDay:200,uptime:94,esc:4,renewP:30,renewYrs:1,ver:false},
+  {seg:'Bus',client:'Surat Sitilink',co:'SMT',desc:'75 MIDI Diesel (Ashok Leyland)',units:75,start:'2016-04',end:'2026-12',rate:50,kmDay:190,uptime:93,esc:4,renewP:40,renewYrs:1,ver:false},
+  // ---- Cab (₹/vehicle/month) ----
+  {seg:'Cab',client:'AMC',co:'SMT',desc:'Sedan cars',units:100,start:'1997-04',end:'2027-03',rate:42000,esc:5,renewP:90,renewYrs:3,ver:false},
+  {seg:'Cab',client:'SBI',co:'SMT',desc:'Sedan cars',units:10,start:'2012-04',end:'2027-03',rate:40000,esc:5,renewP:80,renewYrs:3,ver:false},
+  {seg:'Cab',client:'NABARD',co:'SMT',desc:'Sedan cars',units:2,start:'2016-04',end:'2027-03',rate:40000,esc:5,renewP:80,renewYrs:3,ver:false},
+  {seg:'Cab',client:'AFCONS',co:'SMT',desc:'Sedan cars (2021–25)',units:12,start:'2021-04',end:'2025-12',rate:40000,esc:5,renewP:0,renewYrs:0,ver:false},
+  // ---- Manpower (₹/person/month billing) ----
+  {seg:'Manpower',client:'Surat City Link',co:'SMT',desc:'Ticket collectors / computer operators',units:400,start:'2025-04',end:'2028-03',rate:21000,esc:5,renewP:70,renewYrs:2,ver:false},
+  {seg:'Manpower',client:'AMC',co:'SMT',desc:'Class IV – Health (2025)',units:81,start:'2025-04',end:'2028-03',rate:19000,esc:5,renewP:75,renewYrs:2,ver:false},
+  {seg:'Manpower',client:'AMC',co:'SMT',desc:'Class IV – Health (2022)',units:224,start:'2022-04',end:'2027-03',rate:19000,esc:5,renewP:75,renewYrs:2,ver:false},
+  {seg:'Manpower',client:'AMC Medical Edu. Trust',co:'SMT',desc:'Class IV – Dental College',units:71,start:'2022-04',end:'2027-03',rate:19000,esc:5,renewP:75,renewYrs:2,ver:false},
+  {seg:'Manpower',client:'AMC Medical Edu. Trust',co:'SMT',desc:'Security + bouncers – LG Hospital',units:225,start:'2019-04',end:'2027-03',rate:21500,esc:5,renewP:75,renewYrs:2,ver:false},
+  {seg:'Manpower',client:'AMC',co:'SMT',desc:'Security + bouncers – various depts',units:180,start:'2020-04',end:'2027-03',rate:21500,esc:5,renewP:75,renewYrs:2,ver:false},
+  {seg:'Manpower',client:'HSR (via D.C. Agrawal)',co:'SMT',desc:'Security/marshal/bouncer/HK/office boy',units:160,start:'2022-04',end:'2027-03',rate:20500,esc:5,renewP:60,renewYrs:2,ver:false},
+  {seg:'Manpower',client:'RLDA (via D.C. Agrawal)',co:'SMT',desc:'Traffic marshal + security',units:40,start:'2023-04',end:'2027-03',rate:22000,esc:5,renewP:50,renewYrs:1,ver:false},
+  {seg:'Manpower',client:'Jaipur Metro (via AFCONS)',co:'SMT',desc:'Marshal/supervisor/security',units:62,start:'2024-04',end:'2027-06',rate:22000,esc:5,renewP:40,renewYrs:1,ver:false},
+  {seg:'Manpower',client:'Gujarat Metro (via AFCONS)',co:'SMT',desc:'Marshal/supervisor/security (2021–26)',units:150,start:'2021-04',end:'2026-12',rate:22000,esc:5,renewP:20,renewYrs:1,ver:false}
+ ],
+ pipeline:[
+  {seg:'Bus',name:'BEST 200 MIDI CNG Non-AC (GCC, 132 mo)',client:'BEST Mumbai',units:200,rate:90,kmDay:180,uptime:95,award:'2027-03',mob:6,years:11,prob:35,esc:4},
+  {seg:'Bus',name:'West Bengal 1,000-bus EOI (Howrah / New Town)',client:'WB Transport',units:1000,rate:65,kmDay:200,uptime:93,award:'2027-12',mob:9,years:10,prob:10,esc:4},
+  {seg:'Bus',name:'Jetpur Nawagadh Nagarpalika city bus',client:'JNN',units:15,rate:45,kmDay:180,uptime:95,award:'2027-02',mob:4,years:7,prob:40,esc:4},
+  {seg:'Bus',name:'Tata Smart City SPV — EV buses',client:'Tata Smart City SPV',units:100,rate:60,kmDay:200,uptime:93,award:'2027-09',mob:8,years:10,prob:25,esc:2}
+ ]
+};
+const clone=o=>JSON.parse(JSON.stringify(o));
+let S; try{const r=localStorage.getItem(KEY);S=r?JSON.parse(r):clone(SEED);}catch(e){S=clone(SEED);}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}};
+const $=id=>document.getElementById(id);
+const ym=s=>{if(!s||!/^\d{4}-\d{2}$/.test(s))return NaN;const[y,m]=s.split('-').map(Number);return y*12+(m-1);};
+const daysIn=i=>new Date(Math.floor(i/12),i%12+1,0).getDate();
+const fyOf=i=>{const y=Math.floor(i/12),m=i%12;return m>=3?y+1:y;};
+const fyL=f=>'FY'+String(f).slice(2);
+const cr=v=>v/1e7;
+const f2=v=>(Math.round(v*100)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const f0=v=>Math.round(v).toLocaleString('en-IN');
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const SEGS=['Bus','Cab','Manpower'];
+
+function monthRev(it,i,sc){
+  const base=ym(S.settings.asof);
+  const e=Math.pow(1+(+it.esc||0)/100,Math.max(0,i-base)/12);
+  if(it.seg==='Bus'){
+    const up=Math.min(100,Math.max(0,(+it.uptime||0)+sc.u))/100;
+    return (+it.units||0)*(+it.kmDay||0)*daysIn(i)*up*(+it.rate||0)*e*(1-(+S.settings.penalty||0)/100);
+  }
+  return (+it.units||0)*(+it.rate||0)*e;
+}
+
+function compute(){
+  const st=S.settings,sc=S.scen[st.scen];
+  const fys=[];for(let k=0;k<st.hz;k++)fys.push(st.fy0+k);
+  const s0=ym((st.fy0-1)+'-04'),n=st.hz*12;
+  const A={};fys.forEach(f=>A[f]={sec:0,ren:0,pipe:0,seg:{Bus:0,Cab:0,Manpower:0},cl:{},busSec:0,busW:0,cliff:0});
+  const byC=[];
+  S.contracts.forEach(c=>{
+    const s=ym(c.start),e=ym(c.end);if(isNaN(s)||isNaN(e))return;
+    const rEnd=e+Math.round((+c.renewYrs||0)*12);
+    const rp=Math.min(1,(+c.renewP||0)/100*sc.r);
+    const row={label:c.client+' — '+c.desc,seg:c.seg,v:{}};fys.forEach(f=>row.v[f]=0);
+    for(let i=s0;i<s0+n;i++){
+      if(i<s)continue;let v=0,t=null;
+      if(i<=e){v=monthRev(c,i,sc);t='sec';}else if(i<=rEnd){v=monthRev(c,i,sc)*rp;t='ren';}
+      if(!t)continue;
+      const f=fyOf(i),a=A[f];a[t]+=v;a.seg[c.seg]+=v;a.cl[c.client]=(a.cl[c.client]||0)+v;row.v[f]+=v;
+      if(i%12===2&&c.seg==='Bus'){a.busW+=(+c.units)*(t==='sec'?1:rp);if(t==='sec')a.busSec+=(+c.units);}
+    }
+    if(e>=s0&&e<s0+n){A[fyOf(e)].cliff+=monthRev(c,e,sc)*12;}
+    byC.push(row);
+  });
+  S.pipeline.forEach(p=>{
+    const a0=ym(p.award);if(isNaN(a0))return;
+    const s=a0+(+p.mob||0),e=s+Math.round((+p.years||0)*12)-1;
+    const pr=Math.min(1,(+p.prob||0)/100*sc.p);
+    const row={label:'[Tender] '+p.name,seg:p.seg,v:{}};fys.forEach(f=>row.v[f]=0);
+    for(let i=Math.max(s,s0);i<=Math.min(e,s0+n-1);i++){
+      const v=monthRev(p,i,sc)*pr,f=fyOf(i),a=A[f];
+      a.pipe+=v;a.seg[p.seg]+=v;a.cl[p.client]=(a.cl[p.client]||0)+v;row.v[f]+=v;
+      if(i%12===2&&p.seg==='Bus')a.busW+=(+p.units)*pr;
+    }
+    byC.push(row);
+  });
+  return {fys,A,byC};
+}
+
+// ---------- SVG charts ----------
+function W(el){return Math.max(320,(el.clientWidth||600));}
+function stackBars(el,fys,series,colors,opt){
+  const w=W(el),h=opt&&opt.h||260,pl=48,pb=26,pt=14;
+  const tot=fys.map((f,i)=>series.reduce((s,arr)=>s+arr[i],0));
+  const max=Math.max(1,...tot)*1.12;const bw=(w-pl-10)/fys.length;
+  let g=`<svg width="100%" viewBox="0 0 ${w} ${h}" role="img">`;
+  for(let k=0;k<=4;k++){const y=pt+(h-pt-pb)*(1-k/4);g+=`<line class="ax" x1="${pl}" x2="${w-6}" y1="${y}" y2="${y}"/><text x="${pl-6}" y="${y+4}" text-anchor="end">${f0(max*k/4)}</text>`;}
+  fys.forEach((f,i)=>{let y=h-pb;const x=pl+i*bw+bw*0.18,bwi=bw*0.64;
+    series.forEach((arr,j)=>{const bh=(h-pt-pb)*arr[i]/max;y-=bh;g+=`<rect x="${x}" y="${y}" width="${bwi}" height="${Math.max(0,bh)}" fill="${colors[j]}"><title>${fyL(f)}: ${f2(arr[i])}</title></rect>`;});
+    g+=`<text x="${x+bwi/2}" y="${y-4}" text-anchor="middle" font-weight="700">${opt&&opt.fmt?opt.fmt(tot[i]):f2(tot[i])}</text><text x="${x+bwi/2}" y="${h-8}" text-anchor="middle">${fyL(f)}</text>`;});
+  el.innerHTML=g+'</svg>';
+}
+function hBars(el,items){
+  const w=W(el),rh=24,h=items.length*rh+8,lw=Math.min(210,w*0.42);
+  const max=Math.max(1,...items.map(x=>x.v));let g=`<svg width="100%" viewBox="0 0 ${w} ${h}">`;
+  items.forEach((it,i)=>{const y=4+i*rh,bw=(w-lw-70)*it.v/max;
+    g+=`<text x="${lw-6}" y="${y+15}" text-anchor="end">${esc(it.l.length>32?it.l.slice(0,31)+'…':it.l)}</text><rect x="${lw}" y="${y+3}" width="${bw}" height="${rh-8}" fill="${it.c||'var(--red)'}"/><text x="${lw+bw+5}" y="${y+15}">${it.t}</text>`;});
+  el.innerHTML=g+'</svg>';
+}
+
+// ---------- render forecast ----------
+let LAST=null;
+function renderFc(){
+  const {fys,A,byC}=compute();LAST={fys,A,byC};const st=S.settings;
+  const tot=f=>A[f].sec+A[f].ren+A[f].pipe;
+  stackBars($('chRev'),fys,[fys.map(f=>cr(A[f].sec)),fys.map(f=>cr(A[f].ren)),fys.map(f=>cr(A[f].pipe))],['var(--sec)','var(--ren)','var(--pipe)']);
+  stackBars($('chCliff'),fys,[fys.map(f=>cr(A[f].cliff))],['var(--ren)'],{h:220});
+  stackBars($('chFleet'),fys,[fys.map(f=>A[f].busSec),fys.map(f=>Math.max(0,A[f].busW-A[f].busSec))],['var(--sec)','var(--pipe)'],{h:220,fmt:v=>f0(v)});
+  const f1=fys[0],T1=tot(f1)||1;
+  const cl=Object.entries(A[f1].cl).sort((a,b)=>b[1]-a[1]);
+  $('concT').textContent='Client concentration — '+fyL(f1)+' (weighted)';
+  hBars($('chConc'),cl.slice(0,10).map(([k,v],i)=>({l:k,v,t:f2(cr(v))+' Cr · '+Math.round(v/T1*100)+'%',c:i===0&&v/T1>0.4?'var(--red)':'var(--ren)'})));
+  // segment table
+  let h='<table><tr><th>Segment</th>'+fys.map(f=>`<th class="n">${fyL(f)}</th>`).join('')+'</tr>';
+  SEGS.forEach(s=>{h+=`<tr><td>${s} revenue</td>`+fys.map(f=>`<td class="n">${f2(cr(A[f].seg[s]))}</td>`).join('')+'</tr>';});
+  h+='<tr class="tot"><td>Total revenue</td>'+fys.map(f=>`<td class="n">${f2(cr(tot(f)))}</td>`).join('')+'</tr>';
+  h+='<tr><td>EBITDA (segment margins)</td>'+fys.map(f=>`<td class="n">${f2(cr(SEGS.reduce((a,s)=>a+A[f].seg[s]*st.margin[s]/100,0)))}</td>`).join('')+'</tr>';
+  h+='<tr><td>Receivables locked (working capital)</td>'+fys.map(f=>`<td class="n">${f2(cr(SEGS.reduce((a,s)=>a+A[f].seg[s]/365*st.dso[s],0)))}</td>`).join('')+'</tr>';
+  h+='<tr><td>Secured share of revenue</td>'+fys.map(f=>`<td class="n">${Math.round(A[f].sec/(tot(f)||1)*100)}%</td>`).join('')+'</tr></table>';
+  $('tSeg').innerHTML=h;
+  // by contract
+  let b='<table><tr><th>Contract / tender</th><th>Seg</th>'+fys.map(f=>`<th class="n">${fyL(f)}</th>`).join('')+'</tr>';
+  byC.filter(r=>fys.some(f=>r.v[f]>0)).sort((x,y)=>y.v[f1]-x.v[f1]).forEach(r=>{b+=`<tr><td>${esc(r.label)}</td><td>${r.seg}</td>`+fys.map(f=>`<td class="n">${r.v[f]?f2(cr(r.v[f])):'–'}</td>`).join('')+'</tr>';});
+  $('tByC').innerHTML=b+'</table>';
+  // KPIs
+  const fl=fys[fys.length-1],cagr=fys.length>1&&tot(f1)>0?(Math.pow(tot(fl)/tot(f1),1/(fys.length-1))-1)*100:0;
+  const now=ym(st.asof);let risk=0;S.contracts.forEach(c=>{const e=ym(c.end);if(e>=now&&e<now+24)risk+=monthRev(c,e,S.scen[st.scen])*12;});
+  const run=S.contracts.reduce((a,c)=>{const s=ym(c.start),e=ym(c.end);return a+(s<=now&&e>=now?monthRev(c,now,S.scen[st.scen])*12:0);},0);
+  const top=cl[0];
+  $('kpis').innerHTML=[
+    ['Current run-rate',f2(cr(run))+' Cr/yr','contracts in force, '+st.asof],
+    [fyL(f1)+' revenue',f2(cr(tot(f1)))+' Cr',Math.round(A[f1].sec/T1*100)+'% secured'],
+    [fyL(fl)+' revenue',f2(cr(tot(fl)))+' Cr',Math.round(A[fl].sec/(tot(fl)||1)*100)+'% secured'],
+    ['Growth (CAGR)',(cagr>=0?'+':'')+cagr.toFixed(1)+'%',fyL(f1)+'→'+fyL(fl)+', weighted'],
+    ['Expiring in 24 months',f2(cr(risk))+' Cr/yr',Math.round(risk/(run||1)*100)+'% of run-rate at risk'],
+    ['Largest client',top?Math.round(top[1]/T1*100)+'%':'–',top?top[0]:'']
+  ].map(k=>`<div class="kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${esc(k[2])}</div></div>`).join('');
+  // warnings
+  const w=[];const unv=S.contracts.filter(c=>!c.ver).length;
+  if(unv)w.push(`<b>${unv} of ${S.contracts.length}</b> contract rates are placeholders (yellow). Until you enter actual LoA rates, treat every number on this page as illustrative.`);
+  const stale=S.contracts.filter(c=>ym(c.end)<now&&c.renewP>0);
+  stale.forEach(c=>w.push(`${esc(c.client)} — ${esc(c.desc)} ended ${c.end} but still has ${c.renewP}% renewal probability. Is it actually running on extension?`));
+  const ended=S.contracts.filter(c=>ym(c.end)<now+3&&ym(c.end)>=now-12);
+  if(ended.length)w.push(`Ending within 3 months or recently ended: ${ended.map(c=>esc(c.client+' '+c.units)).join(', ')}. The profile still lists several of these as "Active".`);
+  if(top&&top[1]/T1>0.4)w.push(`${esc(top[0])} is ${Math.round(top[1]/T1*100)}% of ${fyL(f1)} revenue. One price-variation dispute or payment hold there moves the whole company.`);
+  $('warnBox').innerHTML=w.length?'<div class="warn"><b>Check before you rely on this</b><ul>'+w.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>':'';
+}
+
+// ---------- editable tables ----------
+const CCOLS=[['seg','Seg','sel'],['client','Client','l'],['co','Company','m'],['desc','Description','l'],['units','Units','s'],['start','Start','mo'],['end','End','mo'],['rate','Rate','m'],['kmDay','Km/bus/day','s',1],['uptime','Uptime %','s',1],['esc','Esc %/yr','s'],['renewP','Renew %','s'],['renewYrs','Renew yrs','s'],['ver','Rate verified','cb']];
+const PCOLS=[['seg','Seg','sel'],['name','Tender','l'],['client','Client','m'],['units','Units','s'],['rate','Rate','m'],['kmDay','Km/bus/day','s',1],['uptime','Uptime %','s',1],['award','Award','mo'],['mob','Mobilise mo','s'],['years','Term yrs','s'],['prob','Win %','s'],['esc','Esc %/yr','s']];
+function cell(it,c,i,kind){
+  const [k,,t,busOnly]=c;const v=it[k];
+  if(busOnly&&it.seg!=='Bus')return '<td>–</td>';
+  if(t==='sel')return `<td><select data-k="${k}" data-i="${i}" data-x="${kind}">${SEGS.map(s=>`<option${s===v?' selected':''}>${s}</option>`).join('')}</select></td>`;
+  if(t==='cb')return `<td style="text-align:center"><input type="checkbox" data-k="${k}" data-i="${i}" data-x="${kind}"${v?' checked':''}></td>`;
+  if(t==='mo')return `<td><input class="w-m" type="month" value="${esc(v)}" data-k="${k}" data-i="${i}" data-x="${kind}"></td>`;
+  const num=t==='s'||k==='rate';
+  return `<td><input class="w-${t}" ${num?'type="number" step="any"':''} value="${esc(v)}" data-k="${k}" data-i="${i}" data-x="${kind}"></td>`;
+}
+function renderTables(){
+  const now=ym(S.settings.asof);
+  let h='<table><tr>'+CCOLS.map(c=>`<th>${c[1]}</th>`).join('')+'<th></th></tr>';
+  S.contracts.forEach((c,i)=>{h+=`<tr class="${c.ver?'':'unv'} ${ym(c.end)<now?'exp':''}">`+CCOLS.map(col=>cell(c,col,i,'c')).join('')+`<td><button class="del" data-del="c" data-i="${i}" title="Delete">×</button></td></tr>`;});
+  $('tCt').innerHTML=h+'</table>';
+  let p='<table><tr>'+PCOLS.map(c=>`<th>${c[1]}</th>`).join('')+'<th></th></tr>';
+  S.pipeline.forEach((x,i)=>{p+='<tr>'+PCOLS.map(col=>cell(x,col,i,'p')).join('')+`<td><button class="del" data-del="p" data-i="${i}">×</button></td></tr>`;});
+  $('tPp').innerHTML=p+'</table>';
+  const st=S.settings;
+  $('sets').innerHTML=`<label>Penalty / deduction % on bus billing<input type="number" step="any" data-set="penalty" value="${st.penalty}"></label>`+
+    SEGS.map(s=>`<label>${s} EBITDA margin %<input type="number" step="any" data-set="margin.${s}" value="${st.margin[s]}"></label>`).join('')+
+    SEGS.map(s=>`<label>${s} receivable days (DSO)<input type="number" step="any" data-set="dso.${s}" value="${st.dso[s]}"></label>`).join('');
+  $('tSc').innerHTML='<table><tr><th>Scenario</th><th>Renewal prob ×</th><th>Win prob ×</th><th>Uptime shift (pp)</th></tr>'+
+    Object.keys(S.scen).map(k=>`<tr><td>${k}</td>`+['r','p','u'].map(f=>`<td><input type="number" step="any" data-sc="${k}.${f}" value="${S.scen[k][f]}"></td>`).join('')+'</tr>').join('')+'</table>';
+}
+function controls(){
+  const fy=$('fy0');fy.innerHTML='';for(let y=2025;y<=2032;y++)fy.innerHTML+=`<option value="${y}"${y===S.settings.fy0?' selected':''}>${fyL(y)}</option>`;
+  $('scen').value=S.settings.scen;$('hz').value=S.settings.hz;$('asof').value=S.settings.asof;
+}
+function all(){controls();renderTables();renderFc();}
+
+document.addEventListener('change',e=>{
+  const t=e.target,d=t.dataset;
+  if(d.k){const arr=d.x==='c'?S.contracts:S.pipeline,it=arr[+d.i];
+    if(t.type==='checkbox')it[d.k]=t.checked;else if(t.type==='number')it[d.k]=t.value===''?0:+t.value;else it[d.k]=t.value;
+    save();if(d.k==='seg'||d.k==='ver'||d.k==='end')renderTables();renderFc();return;}
+  if(d.set){const [a,b]=d.set.split('.');if(b)S.settings[a][b]=+t.value;else S.settings[a]=+t.value;save();renderFc();return;}
+  if(d.sc){const [a,b]=d.sc.split('.');S.scen[a][b]=+t.value;save();renderFc();return;}
+  if(t.id==='scen'){S.settings.scen=t.value;}else if(t.id==='fy0'){S.settings.fy0=+t.value;}else if(t.id==='hz'){S.settings.hz=+t.value;}else if(t.id==='asof'&&t.value){S.settings.asof=t.value;}else return;
+  save();renderTables();renderFc();
+});
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button');if(!t)return;
+  if(t.classList.contains('tab')){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t.dataset.t));if(t.dataset.t==='fc')renderFc();return;}
+  if(t.dataset.del){if(!confirm('Delete this row?'))return;(t.dataset.del==='c'?S.contracts:S.pipeline).splice(+t.dataset.i,1);save();renderTables();renderFc();return;}
+  if(t.dataset.add){S.contracts.push({seg:t.dataset.add,client:'New client',co:'',desc:'',units:0,start:S.settings.asof,end:S.settings.asof,rate:0,kmDay:200,uptime:95,esc:4,renewP:50,renewYrs:3,ver:false});save();renderTables();renderFc();return;}
+  if(t.id==='addP'){S.pipeline.push({seg:'Bus',name:'New tender',client:'',units:0,rate:0,kmDay:200,uptime:95,award:S.settings.asof,mob:6,years:7,prob:25,esc:4});save();renderTables();renderFc();return;}
+  if(t.id==='bReset'){if(confirm('Discard your edits and reload the profile-based starting data?')){S=clone(SEED);save();all();}return;}
+  if(t.id==='bExport'){dl('daga_forecast_'+S.settings.asof+'.json',JSON.stringify(S,null,1),'application/json');return;}
+  if(t.id==='bImport'){$('fImport').click();return;}
+  if(t.id==='bCsv'){if(!LAST)return;const {fys,byC,A}=LAST;
+    let c='Contract,Segment,'+fys.map(fyL).join(',')+'\n';
+    byC.forEach(r=>c+='"'+r.label.replace(/"/g,'""')+'",'+r.seg+','+fys.map(f=>cr(r.v[f]).toFixed(4)).join(',')+'\n');
+    c+='TOTAL,,'+fys.map(f=>cr(A[f].sec+A[f].ren+A[f].pipe).toFixed(4)).join(',')+'\n';
+    dl('daga_forecast_Cr_'+S.settings.scen+'.csv',c,'text/csv');return;}
+});
+$('fImport').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const o=JSON.parse(r.result);if(!o.contracts||!o.settings)throw 0;S=o;save();all();}catch(x){alert('Not a valid forecaster JSON file.');}};r.readAsText(f);e.target.value='';});
+function dl(name,txt,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();}
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(renderFc,150);});
+all();
+})();
+</script>
+</body>
+</html>
